@@ -1,0 +1,26 @@
+{
+  "name": "dynatrace-api-balancer",
+  "version": "1.0.0",
+  "description": "A wrapper around Axios that balances and throttles requests across tenants, clusters and cluster nodes.",
+  "main": "APIBalancer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dynatrace-ESA/dynatrace-api-balancer.git"
+  },
+  "keywords": [
+    "Dynatrace",
+    "API",
+    "Load",
+    "Balancing",
+    "Throttling"
+  ],
+  "author": "Dynatrace ESA Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Dynatrace-ESA/dynatrace-api-balancer/issues"
+  },
+  "homepage": "https://github.com/Dynatrace-ESA/dynatrace-api-balancer#readme"
+}
