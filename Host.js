@@ -153,7 +153,7 @@ const Host = function (hostName, mainQueue, { requestLimit, queueLimit, maxQueue
                         if (!timeLeft || request.attempts-- < 0)
                             throw new Error({
                                 status:   response.status,
-                                message:  response.statusText + " - timeout of " + timeout + "ms or retry max of " + request.retryCount + " exceeded"
+                                message:  response.statusText + " - timeout of " + timeout + "ms or retry max of " + request.retryLimit + " exceeded"
                             });
                         
                         waitAndRetry = waitTime;
