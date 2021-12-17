@@ -3,6 +3,7 @@
 const Ring    = require('./Ring.js');
 const Host    = require('./Host.js');
 const Request = require('./Request.js');
+const DirectAPIRequest = require('./DirectAPIRequest.js');
 const { CancellableEventEmitter, CancellablePromise } = require('./Cancellables.js');
 const { GlobalRequestQueue } = require('./RequestQueue.js');
 
@@ -45,7 +46,7 @@ const { GlobalRequestQueue } = require('./RequestQueue.js');
  * @classdesc Provides load balancing and rate-limited access to a pool of hosts that
  * expose the Dynatrace API.
  */
-function APIBalancer(config, limits) {}
+function BalancedAPIRequest(config, limits) {}
 
 /**
  * Submit a request to the Dynatrace API. The DynatraceAPI will find the best
@@ -56,17 +57,17 @@ function APIBalancer(config, limits) {}
  * which the progress of the request can be monitored and at which the request can
  * be canceled, or (2) a Promise(-like) object at which the request can be canceled.
  */
-APIBalancer.prototype.request = function (requestOptions, callback) {}
+BalancedAPIRequest.prototype.fetch = function (requestOptions, callback) {}
 
 /**
  * Cancel all running and/or queued requests and reset the connection pool.
  */
-APIBalancer.prototype.restart = function () {}
+BalancedAPIRequest.prototype.restart = function () {}
 
 /**
  * Cancel all running and/or queued requests and delete the connection pool.
  */
-APIBalancer.prototype.shutdown = function () {}
+BalancedAPIRequest.prototype.shutdown = function () {}
 
 /**
  * Report the health of the connection pool. If no parameters are specified, the health
@@ -76,14 +77,12 @@ APIBalancer.prototype.shutdown = function () {}
  * connection pool should be reported.
  * @param {function} [callback] - The function that consumes the health report.
  */
-APIBalancer.prototype.getHealth = function (frequency, callback) {}
+BalancedAPIRequest.prototype.getHealth = function (frequency, callback) {}
 
 /*** START OF ACTUAL IMPLEMENTATION ***/
 
-const APIBalancerIF = function (config, limits) {
+const BalancedAPIIF = function (config = {}, limits = {}) {
     const self = this;
-
-    config = config || {};
 
     // TODO: These limits can also be defined on a tenant level. And we should
     // also allow for throttling limits on a tenant level just the way we do 
@@ -319,7 +318,7 @@ const APIBalancerIF = function (config, limits) {
 
     // Return our public interface.
     return {
-        request: function (options, onDone) {
+        fetch: function (options, onDone) {
             /*  If there's a callback, return a CancellableEventEmitter.
                 If there is no callback, return a CancellablePromise.
 
@@ -360,4 +359,4 @@ const APIBalancerIF = function (config, limits) {
     };
 };
 
-module.exports = APIBalancerIF;
+module.exports = { BalancedAPIRequest: BalancedAPIIF, DirectAPIRequest };

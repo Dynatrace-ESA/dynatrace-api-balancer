@@ -11,7 +11,7 @@ class RequestQueue {
 
         // We could add this to the prototype of Array but that
         // might affect other code.
-        #queue.remove = function (elem) {
+        this.#queue.remove = function (elem) {
             for (let i=0; i < this.length; i++)
                 if (this[i] === elem)
                     return this.splice(i, 1)[0];
