@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: DirectAPIRequest</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: DirectAPIRequest</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>DirectAPIRequest<span class="signature">(limits)</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>The DirectAPIRequest class is a wrapper around Axios to more consistently issue
+and process Dynatrace API requests. It attempts to responds to and recover from
+429 and 503 errors gracefully (up till specified limits). It also automatically
+aggregates paged responses (from both v1 and v2 APIs).  Finally, it unifies the
+various types of errors that may happen while initializating a request, issuing
+it, and processing its response. This greatly simplifies writing code that makes
+Dynatrace API requests.</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="DirectAPIRequest"><span class="type-signature"></span>new DirectAPIRequest<span class="signature">(limits)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Creates an instance with which any number of API requests can be made.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>limits</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Default values for <code>maxRetries</code>, <code>retryAfter</code> and <code>timeout</code>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_DirectAPIRequest.js.html">lib/DirectAPIRequest.js</a>, <a href="lib_DirectAPIRequest.js.html#line15">line 15</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="fetch"><span class="type-signature">(async) </span>fetch<span class="signature">(options, onDone<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {EventEmitter|Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Required properties in the <a href="global.html#RequestOptions"><code>RequestOptions</code></a> object (unless an alias is used - see below):</p>
+<ul>
+<li><code>url</code>: URL relative to the <code>baseURL</code>. Ex.: <code>'/api/v2/entities'</code>.</li>
+<li><code>baseURL</code>: URL of the Dynatrace tenant. Ex.: <code>'https://abc12345.live.dynatrace.com'</code>.</li>
+</ul>
+<p>For convenience aliases have been provided for the following request methods:</p>
+<ul>
+<li><code>get(url, options[, onDone])</code></li>
+<li><code>delete(url, options[, onDone])</code></li>
+<li><code>post(url, data, options[, onDone])</code></li>
+<li><code>put(url, data, options[, onDone])</code></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#RequestOptions">RequestOptions</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The request options, Axios-style.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onDone</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#RequestCallback">RequestCallback</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Callback that handles the result (alternative to using a Promise).</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_DirectAPIRequest.js.html">lib/DirectAPIRequest.js</a>, <a href="lib_DirectAPIRequest.js.html#line87">line 87</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>If <code>onDone</code> is provided, this method returns an EventEmitter.
+Else, this method returns a Promise.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">EventEmitter</span>
+|
+
+<span class="param-type">Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BalancedAPIRequest.html">BalancedAPIRequest</a></li><li><a href="CancellableEventEmitter.html">CancellableEventEmitter</a></li><li><a href="CancellablePromise.html">CancellablePromise</a></li><li><a href="DirectAPIRequest.html">DirectAPIRequest</a></li><li><a href="Throttle.html">Throttle</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Sun Dec 19 2021 10:28:40 GMT-0600 (Central Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
