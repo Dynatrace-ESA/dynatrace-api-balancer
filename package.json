@@ -1,8 +1,11 @@
 {
   "name": "@dt-esa/dynatrace-api-balancer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A wrapper around Axios that balances and throttles requests across tenants, clusters and cluster nodes.",
-  "files": [ "index.js", "lib" ],
+  "files": [
+    "index.js",
+    "lib"
+  ],
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
