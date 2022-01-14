@@ -25,6 +25,12 @@ const resultProps = {
     "/api/v2/tags": "tags"
 };
 
+const defaultLimits = {
+    maxRetries: 3,
+    retryAfter: 1000, // ms
+    timeout: 5000     // ms
+};
+
 /** 
  * The DirectAPIRequest class is a wrapper around Axios to more consistently issue
  * and process Dynatrace API requests. It attempts to responds to and recover from
@@ -35,11 +41,7 @@ const resultProps = {
  * Dynatrace API requests.
  */
 export class DirectAPIRequest {
-    private limits: Limits = {
-        maxRetries: 3,
-        retryAfter: 100,  // ms
-        timeout: 5000  // ms
-    }
+    private limits: Limits = {};
 
 
     /*  When using axios, the rejectUnauthorized works like this:
@@ -57,10 +59,10 @@ export class DirectAPIRequest {
     /**
      * Creates an instance with which any number of API requests can be made.
      * @constructor
-     * @param {object} limits - Default values for `maxRetries`, `retryAfter` and `timeout`.
+     * @param limits - Default values for `maxRetries`, `retryAfter` and `timeout`.
      */
     constructor(limits = {}) {
-        this.limits = { ...this.limits, ...limits };
+        this.limits = { ...defaultLimits, ...limits };
     }
 
     /**
@@ -83,10 +85,10 @@ export class DirectAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    async fetch(options, onDone: RequestCallback = () => { }) {
+    async fetch(options: RequestOptions, onDone: RequestCallback = () => { }) {
         const now = (new Date()).getTime();
-        const issueTime = now;
-        const timeout = options.timeout || this.limits.timeout;
+        const issueTime  = now;
+        const timeout    = options.timeout    || this.limits.timeout;
         const maxRetries = options.maxRetries || this.limits.maxRetries;
         const retryAfter = this.limits.retryAfter;
 
@@ -106,6 +108,7 @@ export class DirectAPIRequest {
         let waitAndRetry = null;
         let nextPageKey = null;
         let attempts = maxRetries;
+        let https = null;
 
         const getAPIResetDelay = (headers) => {
             if (!headers) return retryAfter;
@@ -114,13 +117,28 @@ export class DirectAPIRequest {
         };
 
         try {
+            https = require("https");
+        } 
+        catch (ex) {
+            // NOP
+        }
+
+        // Create HTTPS agent for Axios to not reject Self-signed SSL certs in node env.
+        const httpsAgent = https
+            ? new https.Agent({ rejectUnauthorized: false })
+            : null;
+
+        try {
             do {
                 if (waitAndRetry)    // Wait for the specified amount of time.
                     await new Promise(resolve => setTimeout(resolve, waitAndRetry));
 
                 // In case we need to retry or get multiple pages it's best to  
                 // give Axios a clean 'options' object for each request.
-                response = await axios({ ...options });
+                response = await axios({
+                    httpsAgent: httpsAgent,
+                    ...options 
+                });
 
                 // We collect the wait time, but we only use it if we receive a
                 // recoverable error or if the response is paged.
@@ -163,7 +181,9 @@ export class DirectAPIRequest {
                         : response.headers["next-page-key"] || // v1
                         response.data.nextPageKey;           // v2      
 
-                    if (nextPageKey) {
+                    // If we have a next page key and we have paging is not false, attempt to 
+                    // automatically page through results.
+                    if (nextPageKey && options.paging !== false) {
                         // There's slight difference between v1 and v2 APIs here.
                         if (options.url.includes('/v1'))
                             options.params.nextPageKey = encodeURIComponent(nextPageKey);
@@ -192,11 +212,11 @@ export class DirectAPIRequest {
             const raisedError = {
                 status: null,
                 message: null,
-                url: options.url,
+                url:     options.url,
                 baseURL: options.baseURL,
-                method: options.method,
-                params: options.params,
-                data: options.data
+                method:  options.method,
+                params:  options.params,
+                data:    options.data
             }
 
             if (error.response) {
@@ -216,7 +236,7 @@ export class DirectAPIRequest {
             else if (error.request) {
                 // The request was made but no response was received.
                 raisedError.status = error.code;
-                raisedError.message = error.message || error.code || "Failed to issue request"
+                raisedError.message = error.message || error.code || "Failed to issue request";
             }
             else {
                 // The request was not made because an error occurred.
