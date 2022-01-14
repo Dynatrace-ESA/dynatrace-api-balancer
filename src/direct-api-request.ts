@@ -65,11 +65,22 @@ export class DirectAPIRequest {
         this.limits = { ...defaultLimits, ...limits };
     }
 
+    serializeParams(params: any): string {
+        return '?' + Object.keys(params).map(key => {
+
+            if (!Array.isArray(params[key]))
+                return key + "=" + params[key];
+
+            // If it's an array, create multiple identical keys with the different values.
+            return params[key].map(val => key + "=" + val).join('&');
+        }).join("&");
+    }
+
     /**
      * Issues a request to a Dynatrace API. 
      * @async
-     * @param {RequestOptions} options - The request options, Axios-style. 
-     * @param {RequestCallback} [onDone] - Callback that handles the result (alternative to using a Promise). 
+     * @param options - The request options, Axios-style. 
+     * @param onDone  - Callback that handles the result (alternative to using a Promise). 
      * @returns {EventEmitter|Promise} 
      * If `onDone` is provided, this method returns an EventEmitter. 
      * Else, this method returns a Promise.
@@ -85,7 +96,7 @@ export class DirectAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    async fetch(options: RequestOptions, onDone: RequestCallback = () => { }) {
+    public async fetch(options: RequestOptions, onDone: RequestCallback = () => { }) {
         const now = (new Date()).getTime();
         const issueTime  = now;
         const timeout    = options.timeout    || this.limits.timeout;
@@ -132,13 +143,18 @@ export class DirectAPIRequest {
             do {
                 if (waitAndRetry)    // Wait for the specified amount of time.
                     await new Promise(resolve => setTimeout(resolve, waitAndRetry));
+                    
+                // Explicitly render parmeters for Dynatrace compatibility.
+                const targetUrl = options.url + this.serializeParams(options.params);
+
+                // Create non-referenced copy of params.
+                const requestOpts = JSON.parse(JSON.stringify(options.params));
+                delete requestOpts.params;
+                requestOpts.httpsAgent = httpsAgent;
 
                 // In case we need to retry or get multiple pages it's best to  
                 // give Axios a clean 'options' object for each request.
-                response = await axios({
-                    httpsAgent: httpsAgent,
-                    ...options 
-                });
+                response = await axios(targetUrl, requestOpts);
 
                 // We collect the wait time, but we only use it if we receive a
                 // recoverable error or if the response is paged.
@@ -249,23 +265,23 @@ export class DirectAPIRequest {
         }
     }
 
-    async get(url: string, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async get(url: string, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
         options.url = url;
         options.method = 'get';
         return this.fetch(options, onDone);
     }
-    async delete(url: string, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async delete(url: string, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
         options.url = url;
         options.method = 'delete';
         return this.fetch(options, onDone);
     }
-    async post(url: string, data: any, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async post(url: string, data: any, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
         options.url = url;
         options.data = data;
         options.method = 'post';
         return this.fetch(options, onDone);
     }
-    async put(url: string, data: any, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async put(url: string, data: any, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
         options.url = url;
         options.data = data;
         options.method = 'put';

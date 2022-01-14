@@ -11,7 +11,7 @@ export class CancellableEventEmitter extends EventEmitter {
 
     /**
      * Creates an instance.
-     * @param {object} request - An object that should expose an 'cancel()' method
+     * @param request - An object that should expose an 'cancel()' method
      * that accepts an optional reason (string).
      */
     constructor(private request: { cancel: Function } = { cancel: () => { } }) {
@@ -25,7 +25,7 @@ export class CancellableEventEmitter extends EventEmitter {
      * to be called with a {@link RequestError} as it single argument, containing 
      * status 512 and this reason as its message.
      * 
-     * @param {string} reason - The reason for the cancellation. If omitted, the request will be cancelled or aborted silently.
+     * @param reason - The reason for the cancellation. If omitted, the request will be cancelled or aborted silently.
      */
     cancel(reason) {
         try {
@@ -60,7 +60,7 @@ export class CancellablePromise extends Promise<any> {
      * method to be called with a {@link RequestError} as it single argument, 
      * containing status 512 and this reason as its message.
      * 
-     * @param {string} reason - The reason for the cancellation. If omitted, the request will be cancelled or aborted silently.
+     * @param reason - The reason for the cancellation. If omitted, the request will be cancelled or aborted silently.
      */
     cancel(reason): void {
         return this.onCancel(reason);

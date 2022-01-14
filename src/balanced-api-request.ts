@@ -33,8 +33,8 @@ export class BalancedAPIRequest {
     /**
      * Creates a pool of connections to reach multiple tenants and clusters.
      * @constructor
-     * @param {object}   limits  - Default values for `retryLimit`, `retryAfter` and `timeout`.
-     * @param {TenantConfig[]} tenants - The configurations for the tenants. 
+     * @param limits  - Default values for `retryLimit`, `retryAfter` and `timeout`.
+     * @param tenants - The configurations for the tenants. 
      */
     constructor (private limits: Limits = {}, private tenants = {}) {
         // TODO: These limits can also be defined on a tenant level. And we should

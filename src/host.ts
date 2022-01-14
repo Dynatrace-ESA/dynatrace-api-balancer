@@ -5,6 +5,7 @@ import { RequestQueue } from "./request-queue";
 import { Throttle } from "./throttle";
 import { Limits, Tenant } from "./types";
 
+
 export class Host {
     
     private globalQueue;
@@ -76,9 +77,9 @@ export class Host {
 
     /**
      * Refills the bucket completely.
-     * @param  {Object} request [description]
-     * @param  {boolean} forced If forced is `true`, disregard queue and make the request.
-     * @return {boolean}        returns `true` if the request was queued. Otherwise returns `false`.
+     * @param  request [description]
+     * @param   forced If forced is `true`, disregard queue and make the request.
+     * @return         `true` if the request was queued. Otherwise returns `false`.
      */
     public accept(request, forced = false) {
         // Schedule a recursive call to keep consuming from the queues.
