@@ -52,7 +52,7 @@ export class RequestQueue<T = any> {
      * 
      * @returns The first request on the queue.
      */
-    takeNext(): Request { return this.take(0); }
+    takeNext(host?: Host, olderThan?: number): Request { return this.take(0); }
 
     /**
      * @param request Request to release.
@@ -122,7 +122,6 @@ export class GlobalRequestQueue extends RequestQueue {
         this.tenants = global.tenants;
     }
 
-    // @ts-expect-error
     takeNext(host: Host, olderThan?: number): Request {
         olderThan = olderThan || (new Date()).getTime();
 
