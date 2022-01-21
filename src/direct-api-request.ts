@@ -66,14 +66,16 @@ export class DirectAPIRequest {
     }
 
     serializeParams(params: any): string {
-        return '?' + Object.keys(params).map(key => {
+        const serialized = '?' + Object.keys(params).filter(key => params[key]).map(key => {
 
             if (!Array.isArray(params[key]))
                 return key + "=" + params[key];
 
             // If it's an array, create multiple identical keys with the different values.
-            return params[key].map(val => key + "=" + val).join('&');
+            return params[key].filter(val => params[key][val]).map(val => key + "=" + val).join('&');
         }).join("&");
+        // Return empty string where no params are rendered
+        return serialized.length == 1 ? '' : serialized;
     }
 
     /**
@@ -148,7 +150,7 @@ export class DirectAPIRequest {
                 const targetUrl = options.url + this.serializeParams(options.params);
 
                 // Create non-referenced copy of params.
-                const requestOpts = JSON.parse(JSON.stringify(options.params));
+                const requestOpts = JSON.parse(JSON.stringify(options));
                 delete requestOpts.params;
                 requestOpts.httpsAgent = httpsAgent;
 
