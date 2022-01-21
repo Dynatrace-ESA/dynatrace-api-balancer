@@ -115,7 +115,7 @@ export class DirectAPIRequest {
         // top-level flat array.		
         let prop = resultProps[Object.keys(resultProps).find(k => options.url.endsWith(k))];
         let list = null;
-        let data = null;
+        let data: Array<any> = null;
         let response = null;
         let waitTime = null;
         let waitAndRetry = null;
@@ -214,16 +214,19 @@ export class DirectAPIRequest {
                 }
             } while (waitAndRetry);
 
+            
+            let output = {};
+
             // If we had take the data from a property so that we could
             // keep appending paged data, then put that property back again.
             if (prop) {
                 list = data;
-                data = {};
-                data[prop] = list;
+                output = data;
+                output[prop] = list;
             }
 
-            onDone(null, data);
-            return data;
+            onDone(null, output);
+            return output;
         }
         catch (error) {
             // Errors handled here are unrecoverable.
