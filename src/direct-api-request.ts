@@ -113,7 +113,7 @@ export class DirectAPIRequest {
         // If we need to append result sets due to paging, we have to account 
         // for situations where the sets are under a property rather than as 
         // top-level flat array.		
-        let prop = resultProps[options.url];
+        let prop = resultProps[Object.keys(resultProps).find(k => options.url.endsWith(k))];
         let list = null;
         let data = null;
         let response = null;
