@@ -98,7 +98,7 @@ export class DirectAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    public async fetch(options: RequestOptions, onDone: RequestCallback = () => { }) {
+    public async fetch<T = any>(options: RequestOptions, onDone: RequestCallback = () => { }) {
         const now = (new Date()).getTime();
         const issueTime  = now;
         const timeout    = options.timeout    || this.limits.timeout;
@@ -226,7 +226,7 @@ export class DirectAPIRequest {
             }
 
             onDone(null, output);
-            return output;
+            return output as T;
         }
         catch (error) {
             // Errors handled here are unrecoverable.
