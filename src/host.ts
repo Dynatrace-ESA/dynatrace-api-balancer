@@ -116,7 +116,7 @@ export class Host {
         this.issuedList.place(request);
         request.setHost(this.hostName);
 
-        setImmediate(this.issue, request);
+        setImmediate(this.issue.bind(this), request);
         return true;        // We issued the request.
     }
 

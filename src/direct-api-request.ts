@@ -28,7 +28,7 @@ const resultProps = {
 const defaultLimits = {
     maxRetries: 3,
     retryAfter: 1000, // ms
-    timeout: 5000     // ms
+    timeout: 50000     // ms
 };
 
 /** 
@@ -162,6 +162,9 @@ export class DirectAPIRequest {
                 // recoverable error or if the response is paged.
                 waitTime = getAPIResetDelay(response.headers);
 
+                // Only try again when we get an actual status code.
+                // This will NOT retry when a timeout occurs.
+                // Timeouts largely occur due to non-transient issues.
                 if (response.status >= 400) {
                     let timeLeft = (issueTime + timeout) > (now + waitTime);
 

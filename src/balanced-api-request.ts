@@ -13,7 +13,7 @@ const limitDefaults = {
     maxQueueSize: 500, // Maximum length of the local queues (ie. highWaterMark).
     requestLimit: 20,  // Upper limit to number of outstanding requests.
     retryAfter: 100, // ms
-    timeout: 5000 // ms
+    timeout: 50000 // ms
 };
 
 /**

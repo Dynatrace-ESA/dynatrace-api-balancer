@@ -54,6 +54,7 @@ export type Tenant = {
  * @param url          	    - URL relative to the `baseURL` or the `tenant`. Ex.: `'/api/v2/entities'`. 
  * @param method     	    - Request method (`'get'`,  `'put'`,  `'post'`,  `'delete'`). 
  * @param paging            - Specifies if nextPageKey will be automatically detected and paged. Defaults to true.
+ * @param proxy 	        - Proxy to use to make HTTP/S connections.
  * @param maxRetries        - Specifies the number of attempts to make if there is a failure. Defaults to 3.
  * @param tenant       	    - Name of the Dynatrace tenant ({@link BalancedAPIRequest} only - **not an Axios property**). Ex.: `'PROD'`. 
  * @param baseURL      	    - URL of the Dynatrace tenant ({@link DirectAPIRequest} only). Ex.: `'https://abc12345.live.dynatrace.com'`. 
@@ -64,7 +65,6 @@ export type Tenant = {
  * @param timeout           - Number of milliseconds before the request times out. If the request takes longer than `timeout`, it will be aborted (if it has been issued already) or cancelled (if it is still waiting in a queue).
  * @param retryAfter        - Number of milliseconds to wait before trying again after a 429 or 503 status is received and the response does not contain a 'Retry-After' header. If not provided, the default from the constructor is used.
  * @param maxRedirects 	    - Maximum number of redirects to follow. If set to 0, no redirects will be followed.
- * @param maxRetries   	    - Maximum number of retries allowed if a potentially transient error is encountered (**not an Axios property**).
  * @param maxBodyLength	    - Maximum size of the http request content in bytes.
  * @param maxContentLength  - Maximum size of the http response content in bytes.
  * @param validateStatus   	- **IGNORED** This parameter is set by {@link BalancedAPIRequest} and {@link DirectAPIRequest} internally.
@@ -73,7 +73,6 @@ export type Tenant = {
  * @param responseEncoding 	- Encoding to use for decoding responses. Note: Ignored when `responseType` is `'stream'`.
  * @param cancelToken       - Specifies a cancel token that can be used to cancel the request. See Axios documentation for details. Note that {@link BalancedAPIRequest} sets this property to create and return a {@link CancellablePromise} or a {@link CancellableEventEmitter} through which requests can be cancelled.
  * @param socketPath        - See Axios documentation.
- * @param proxy 	        - See Axios documentation.
  * @param httpAgent         - See Axios documentation.
  * @param httpsAgent        - See Axios documentation.
  * @param decompress        - Specifies whether or not the response body should be decompressed automatically. If set to `true` will also remove the `'content-encoding'` header from the response objects of all decompressed responses. **Note**: The automatic paging support only works then this value is set to `true`.
