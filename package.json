@@ -1,6 +1,6 @@
 {
   "name": "@dt-esa/dynatrace-api-balancer",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "A wrapper around Axios that balances and throttles requests across tenants, clusters and cluster nodes.",
   "files": [
     "dist",
