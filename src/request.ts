@@ -46,11 +46,12 @@ export class Request {
             });
         }
 
+        // ! TBD
         // Setting a cancelToken makes the request cancellable (once it has been
         // issued). The argument to 'CancelToken()' is a function that receives
         // a 'cancel()' function as a parameter, which we store so that we can
         // invoke it when we are asked to cancel the request.
-        options.cancelToken = new axios.CancelToken(cancel => this.abort = cancel);
+        // options.cancelToken = new axios.CancelToken(cancel => this.abort = cancel);
 
         this.options = options;
         this.tenant = tenant;

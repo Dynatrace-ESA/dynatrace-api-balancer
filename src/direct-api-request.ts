@@ -190,29 +190,34 @@ export class DirectAPIRequest {
                     // Good, useable JSON response received.
                     waitAndRetry = null;
 
-                    // Depending on the API, a paged set of results may be an
-                    // array, or may be an array at a property.
-                    list = prop ? response.data[prop] : response.data;
-                    data = data !== null
-                        ? data.concat(list)
-                        : list;
-
-                    nextPageKey = options.responseType === 'stream'
-                        ? null   // If we stream, we don't handle paging.
-                        : response.headers["next-page-key"] || // v1
-                        response.data.nextPageKey;           // v2      
-
-                    // If we have a next page key and we have paging is not false, attempt to 
-                    // automatically page through results.
-                    if (nextPageKey && options.paging !== false) {
-                        // There's slight difference between v1 and v2 APIs here.
-                        if (options.url.includes('/v1'))
-                            options.params.nextPageKey = encodeURIComponent(nextPageKey);
-                        else
-                            options.params = { nextPageKey: encodeURIComponent(nextPageKey) };
-
-                        // Wait a sec and then get the next set (page) of data.
-                        waitAndRetry = waitTime;
+                    // Immediately return stream.
+                    if (options.responseType === 'stream') {
+                        data = response.data;
+                    }
+                    // We have the whole response object.
+                    else {
+                        // Depending on the API, a paged set of results may be an
+                        // array, or may be an array at a property.
+                        list = prop ? response.data[prop] : response.data;
+                        data = data !== null
+                            ? data.concat(list)
+                            : list;
+    
+                        nextPageKey = response.headers["next-page-key"] || // v1
+                                      response.data.nextPageKey;           // v2      
+                                      
+                        // If we have a next page key and we have paging is not false, attempt to 
+                        // automatically page through results.
+                        if (nextPageKey && options.paging !== false) {
+                            // There's slight difference between v1 and v2 APIs here.
+                            if (options.url.includes('/v1'))
+                                options.params.nextPageKey = encodeURIComponent(nextPageKey);
+                            else
+                                options.params = { nextPageKey: encodeURIComponent(nextPageKey) };
+    
+                            // Wait a sec and then get the next set (page) of data.
+                            waitAndRetry = waitTime;
+                        }
                     }
                 }
             } while (waitAndRetry);
@@ -220,9 +225,13 @@ export class DirectAPIRequest {
             
             let output = {};
 
+            // If the response is a stream, directly return it.
+            if (options.responseType === 'stream') {
+                output = data;
+            }
             // If we had take the data from a property so that we could
             // keep appending paged data, then put that property back again.
-            if (prop) {
+            else if (prop) {
                 list = data;
                 output = data;
                 output[prop] = list;
