@@ -1,4 +1,4 @@
-import { CancellableEventEmitter, CancellablePromise } from "./Cancellables";
+import { CancellableEventEmitter, CancellablePromise } from "./cancellables";
 import { GlobalRequestQueue } from "./request-queue";
 import { Limits, RequestOptions } from "./types";
 import { Host } from './host';

@@ -1,7 +1,7 @@
-import { Request } from "./Request";
+import { Request } from "./request";
 import { Host } from './host';
 
-export class RequestQueue<T = any> {
+export class RequestQueue {
     // @ts-expect-error
     private queue: Array<Request> & { remove: (Request) => Request } = [];
 

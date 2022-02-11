@@ -1,6 +1,4 @@
-import axios, { Axios, AxiosRequestConfig } from 'axios';
-import { CancellableEventEmitter } from './Cancellables.js';
-import { Throttle } from './throttle';
+import { CancellableEventEmitter } from './cancellables.js';
 import { Tenant, RequestOptions, Limits, RequestCallback } from './types.js';
 
 export class Request {
