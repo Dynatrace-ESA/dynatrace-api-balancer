@@ -1,14 +1,16 @@
 {
-  "name": "dynatrace-api-balancer",
-  "version": "1.0.3",
+  "name": "@dt-esa/dynatrace-api-balancer",
+  "version": "1.0.16",
   "description": "A wrapper around Axios that balances and throttles requests across tenants, clusters and cluster nodes.",
-  "main": "index.js",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -28,6 +30,11 @@
   },
   "homepage": "https://github.com/Dynatrace-ESA/dynatrace-api-balancer#readme",
   "dependencies": {
-    "jsdoc": "^3.6.7"
+    "axios": "^0.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.8",
+    "jsdoc": "^3.6.7",
+    "typescript": "^4.5.4"
   }
 }

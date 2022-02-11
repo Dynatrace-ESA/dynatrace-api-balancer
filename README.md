@@ -1,6 +1,8 @@
 ## dynatrace-api-balancer
 A wrapper around [Axios](https://axios-http.com/docs/req_config "Axios") that balances and throttles Dynatrace API requests across tenants, clusters and cluster nodes.
 
+A dependency map can be found [here](https://npmgraph.js.org/?q=@dt-esa/dynatrace-api-balancer).
+
 ### Usage
 Using {@link BalancedAPIRequest}:
 ```javascript
