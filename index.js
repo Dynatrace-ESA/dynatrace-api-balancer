@@ -48,6 +48,7 @@ const BalancedAPIRequest = require('./lib/BalancedAPIRequest.js');
  * @property {string}   [method='get'] 	- Request method (`'get'`,  `'put'`,  `'post'`,  `'delete'`). 
  * @property {string}   tenant       	- Name of the Dynatrace tenant ({@link BalancedAPIRequest} only - **not an Axios property**). Ex.: `'PROD'`. 
  * @property {string}   baseURL      	- URL of the Dynatrace tenant ({@link DirectAPIRequest} only). Ex.: `'https://abc12345.live.dynatrace.com'`. 
+ * @property {Proxy}    [proxy] 	      - Proxy to use to make HTTP/S connections.
  * @property {object}   [headers]      	- Plain `object` containing the headers to be set in the request. Ex.: `{ 'Authorization': 'token XYZ' }`. 
  * @property {object}   [params]       	- URL parameters to be sent with the request. Must be a plain `object` or a `URLSearchParams` object. Ex.: `{ ID: 12345 }`. 
  * @property {object}   [data]         	- Must be of one of the following types: `string`, `object`, `ArrayBuffer`, `ArrayBufferView`, `URLSearchParams`, `Stream`, `Buffer`. Ex.: `{ firstName: 'Bart' }`. 
@@ -62,13 +63,22 @@ const BalancedAPIRequest = require('./lib/BalancedAPIRequest.js');
  * @property {string}   [responseType='json'] 		- Specifies the type of data that the server will respond with. Options are: `'arraybuffer'`, `'document'`, `'json'`, `'text'`, `'stream'`. **Note**: The automatic paging support only works then this value is set to `'json'`.
  * @property {boolean}  [withCredentials=false]  	- Specifies whether or not cross-site Access-Control requests should be made using credentials.
  * @property {string}   [responseEncoding='utf8'] 	- Encoding to use for decoding responses. Note: Ignored when `responseType` is `'stream'`.
- * @property {function} [cancelToken] 	- Specifies a cancel token that can be used to cancel the request. See Axios documentation for details. Note that {@link BalancedAPIRequest} sets this property to create and return a {@link CancellablePromise} or a {@link CancellableEventEmitter} through which requests can be cancelled.
- * @property {object}   [socketPath] 	- See Axios documentation.
- * @property {object}   [proxy] 		- See Axios documentation.
- * @property {object}   [httpAgent] 	- See Axios documentation.
- * @property {object}   [httpsAgent]	- See Axios documentation.
+ * @property {function} [cancelToken]     - Specifies a cancel token that can be used to cancel the request. See Axios documentation for details. Note that {@link BalancedAPIRequest} sets this property to create and return a {@link CancellablePromise} or a {@link CancellableEventEmitter} through which requests can be cancelled.
+ * @property {object}   [socketPath] 	  - See Axios documentation.
+ * @property {object}   [httpAgent] 	  - See Axios documentation.
+ * @property {object}   [httpsAgent]	  - See Axios documentation.
  * @property {boolean}  [decompress=true] - Specifies whether or not the response body should be decompressed automatically. If set to `true` will also remove the `'content-encoding'` header from the response objects of all decompressed responses. **Note**: The automatic paging support only works then this value is set to `true`.
  *  
+ */
+
+/**
+ * @typedef Proxy
+ * 
+ * @description
+ * Configuration of a proxy host through which connections to the baseURL are to be made.
+ *
+ * @property {string} host  - DNS name or IP address of the proxy host.
+ * @property {number} port  - Port at which the proxy accepts requests.
  */
 
 /**
