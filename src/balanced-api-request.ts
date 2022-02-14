@@ -312,7 +312,7 @@ export class BalancedAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    public fetch(options: RequestOptions, onDone: RequestCallback): CancellableEventEmitter | CancellablePromise {
+    public fetch(options: RequestOptions, onDone: RequestCallback = null): CancellableEventEmitter | CancellablePromise {
         /*  If there's a callback, return a CancellableEventEmitter.
             If there is no callback, return a CancellablePromise.
 
@@ -336,23 +336,23 @@ export class BalancedAPIRequest {
             });
         }
     }
-    public async get(url, options, onDone) {
+    public async get(url, options, onDone = null) {
         options.url = url;
         options.method = 'get';
         return this.fetch(options, onDone);
     }
-    public async delete(url, options, onDone) {
+    public async delete(url, options, onDone = null) {
         options.url = url;
         options.method = 'delete';
         return this.fetch(options, onDone);
     }
-    public async post(url, data, options, onDone) {
+    public async post(url, data, options, onDone = null) {
         options.url = url;
         options.data = data;
         options.method = 'post';
         return this.fetch(options, onDone);
     }
-    public async put(url, data, options, onDone) {
+    public async put(url, data, options, onDone = null) {
         options.url = url;
         options.data = data;
         options.method = 'put';

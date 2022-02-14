@@ -81,12 +81,8 @@ export class DirectAPIRequest {
 
     /**
      * Issues a request to a Dynatrace API. 
-     * @async
      * @param options - The request options, Axios-style. 
-     * @param onDone  - Callback that handles the result (alternative to using a Promise). 
-     * @returns {EventEmitter|Promise} 
-     * If `onDone` is provided, this method returns an EventEmitter. 
-     * Else, this method returns a Promise.
+     * @param onDone  - Optional callback to handle the result (alternative to using a Promise). 
      * 
      * @description
      * Required properties in the {@link RequestOptions} object (unless an alias is used - see below):
@@ -99,7 +95,7 @@ export class DirectAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    public async fetch<T = any>(options: RequestOptions, onDone: RequestCallback) {
+    public async fetch<T = any>(options: RequestOptions, onDone: RequestCallback = null) {
         const now = (new Date()).getTime();
         const issueTime  = now;
         const timeout    = options.timeout    || this.limits.timeout;
@@ -218,7 +214,7 @@ export class DirectAPIRequest {
                 output[prop] = data;
             }
 
-            onDone(null, output);
+            if (onDone) onDone(null, output);
             return output as T;
         }
         catch (error) {
@@ -260,28 +256,28 @@ export class DirectAPIRequest {
                 raisedError.message = error.message || "Request could not be issued";
             }
 
-            onDone(raisedError);
+            if (onDone) onDone(raisedError);
             throw raisedError;
         }
     }
 
-    public async get(url: string, options: RequestOptions, onDone: RequestCallback): Promise<any> {
+    public async get(url: string, options: RequestOptions, onDone: RequestCallback = null): Promise<any> {
         options.url = url;
         options.method = 'get';
         return this.fetch(options, onDone);
     }
-    public async delete(url: string, options: RequestOptions, onDone: RequestCallback): Promise<any> {
+    public async delete(url: string, options: RequestOptions, onDone: RequestCallback = null): Promise<any> {
         options.url = url;
         options.method = 'delete';
         return this.fetch(options, onDone);
     }
-    public async post(url: string, data: any, options: RequestOptions, onDone: RequestCallback): Promise<any> {
+    public async post(url: string, data: any, options: RequestOptions, onDone: RequestCallback = null): Promise<any> {
         options.url = url;
         options.data = data;
         options.method = 'post';
         return this.fetch(options, onDone);
     }
-    public async put(url: string, data: any, options: RequestOptions, onDone: RequestCallback): Promise<any> {
+    public async put(url: string, data: any, options: RequestOptions, onDone: RequestCallback = null): Promise<any> {
         options.url = url;
         options.data = data;
         options.method = 'put';
