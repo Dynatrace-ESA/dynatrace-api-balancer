@@ -1,5 +1,5 @@
 import { CancellableEventEmitter } from './cancellables.js';
-import { Tenant, RequestOptions, Limits, RequestCallback } from './types.js';
+import { TenantConfig, RequestOptions, Limits, RequestCallback } from './types.js';
 
 export class Request {
     queue = null;       // Set by Queues.
@@ -18,7 +18,7 @@ export class Request {
      * @param limits strict performance limits to follow.
      * @param onDone Callback on request completion.
      */
-    constructor(public tenant: Tenant, public options: RequestOptions, private limits: Limits, private onDone: RequestCallback) {
+    constructor(public tenant: TenantConfig, public options: RequestOptions, private limits: Limits, private onDone: RequestCallback) {
         /*  The 'options' object will be passed to Axios as-is, 
             with a few amendments made in this constructor.        
          */
@@ -73,7 +73,7 @@ export class Request {
     }
 
     /**
-     * Set the host that accepts this request.
+     * Set the host that accepted this request.
      * @param host DNS hostname string.
      * @returns calculated URL
      */

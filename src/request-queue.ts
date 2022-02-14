@@ -104,13 +104,21 @@ export class RequestQueue {
     peek(i?: number): Request { return this.queue[i || 0]; }
 
     /**
-     * Return true if the queue is full.
+     * Returns true if the queue is full.
      */
     get isFull(): boolean { return this.queue.length >= this.maxQueueSize; }
+
     /**
-     * Return current queue length.
+     * Returns current queue length.
      */
     get length(): number { return this.queue.length; }
+
+    /**
+     * Increases the maximum queue size by the indicated amount.
+     * @param value The amount bby which the maximum queue size should grow.
+     * @returns Returns the maximum queue length.
+     */
+    extendBy(value): number { this.maxQueueSize += value; return this.maxQueueSize; }
 }
 
 export class GlobalRequestQueue extends RequestQueue {

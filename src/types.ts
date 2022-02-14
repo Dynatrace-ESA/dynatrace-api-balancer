@@ -1,5 +1,6 @@
 import { AxiosRequestConfig } from "axios";
 import { Throttle } from "./throttle";
+import { Host} from "./host";
 
 /**
  * 
@@ -27,13 +28,14 @@ import { Throttle } from "./throttle";
  * @param retryAfter   - Number of milliseconds to wait before retrying after a 429 or 503 
  *                                 status where the response does not contain a 'Retry-After' header. 
  */
-export type Tenant = {
+export type TenantConfig = {
     name: string,
     token: string,
-    port: number,
+    hosts: Host[] | string[],
+    port?: number,
     url: string,
-    protocol: "https" | "http",
-    throttle: Throttle,
+    protocol?: "https" | "http",
+    throttle?: Throttle,
     maxRetries?:   3    | number,
     reqRateLimit?: 200  | number,
     maxQueueSize?: 1000 | number,
@@ -42,6 +44,20 @@ export type Tenant = {
     timeout?:      5000 | number,
     retryAfter?:   5000 | number, 	
 };
+
+export type Tenant = {
+    name: string,
+    host?: string,
+    hosts?: string[],
+    protocol?: "https" | "http",    
+    port?: number,
+    url: string,
+    reqRateLimit?: 200 | number,
+    requestLimit?: 10  | number,
+    token: string
+};
+
+export type Tenants = { [key: string]: Tenant };
 
 /**
  * 

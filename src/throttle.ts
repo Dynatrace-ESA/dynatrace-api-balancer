@@ -11,7 +11,6 @@ export class Throttle {
 
     /**   
      * Resolves next promise in the queue and keeps emptying it.
-     * @private
      */
     private next(): void {
         if (this.queue.length === 0) return;
@@ -22,7 +21,6 @@ export class Throttle {
 
     /**
      * Creates a throttle.
-     * @constructor
      * @param limit  - Number of requests allowed.
      * @param window - Per this time window (in ms).
      */
@@ -34,15 +32,16 @@ export class Throttle {
         this.last = 0;              // Time we last added more drops.
     }
 
-    /** Resets the throttle to maximum capacity. */
+    /** Resets the throttle to its maximum capacity. 
+     */
     reset(): void {
         this.last = (new Date()).getTime();
         this.fill = this.size;
     }
 
     /** 
-     * Returns how much capacity is left for this time window. This value is useful
-     * for selecting the least constricted resource among a pool of throttled resources. 
+     * Returns how much capacity is left. This value is useful for selecting 
+     * the least constricted resource among a pool of throttled resources. 
      */
     get remainder(): number {
         return this.fill;
@@ -60,12 +59,13 @@ export class Throttle {
     /** 
      * Returns the time (ms) until a next request can be honored (plus 1ms if there's a wait).
      * This is useful in case multiple throttles need to be checked before a request can be
-     * consumed. Note that this getter updates the throttle's state before it produces a value.
+     * consumed. Contrary to {@link nextSlot}, this getter updates the throttle's state
+     * before it produces a value.
      */
     get waitTime(): number {
         // First refill the bucket proportional to the time elapsed since the last refill.
         const now = (new Date()).getTime();
-        const added = Math.floor((now - this.last) / this.rate);      // How many drops should be added?
+        const added = Math.floor((now - this.last) / this.rate);    // How many drops should be added?
         this.fill = Math.min(this.size, this.fill + added);         // Don't exceed bucket capacity.
         this.last = Math.min(now, this.last + (added * this.rate)); // Update the refill timestamp.
 
@@ -76,6 +76,7 @@ export class Throttle {
     /** 
      * Consumes one unit of capacity. Should only be called if {@link Throttle#waitTime waitTime} > 0. 
      * @example
+     * ```javascript
      * function doSomething() {
      *     const delay = myThrottle.waitTime;
      *     if (delay > 0)
@@ -83,8 +84,9 @@ export class Throttle {
      * 
      *     myThrottle.consume();
      *     // Do it.
-     *     return "I did it";
+     *     return "I did it.";
      * }
+     * ```
      */
     consume(): void {
         this.fill--;
@@ -93,14 +95,17 @@ export class Throttle {
     /**
      * Returns a promise that is guaranteed to resolve (in FIFO order), but not sooner
      * than the throttle allows. For certain use cases this provides a more convenient
-     * alternative compared to using the {@link Throttle#waitTime waitTime} and 
-     * {@link Throttle#consume consume()} pair. 
+     * alternative compared to using the {@linkcode Throttle.waitTime} and 
+     * {@linkcode Throttle.consume} pair. 
+     * 
      * @example
+     * ```javascript
      * async function doSomething() {
      *     await myThrottle.permit();   // Resolves immediately or as soon as possible.
      *     // Do it.
-     *     return "I did it";
+     *     return "I did it.";
      * }
+     * ```
      */
     permit(): Promise<any> {
         return new Promise((resolve, reject) => {
@@ -109,5 +114,22 @@ export class Throttle {
             this.queue.push(resolve);
             setInterval(this.next, delay);
         });
+    }
+}
+
+/** 
+ *  The NoThrottle is a special type of {@coderef Throttle} that does not do any throttling.
+ *  It is used where no request limits have been specified.
+ */
+export class NoThrottle extends Throttle {
+    constructor() {
+        super(Number.POSITIVE_INFINITY, 1);
+    }
+
+    get nextSlot(): number { return 0; }
+    get waitTime(): number { return 0; }
+    consume(): void {}
+    permit(): Promise<any> {
+        return new Promise((resolve, reject) => resolve(null));
     }
 }

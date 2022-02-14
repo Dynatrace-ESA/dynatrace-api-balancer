@@ -1,23 +1,22 @@
 import { CancellableEventEmitter, CancellablePromise } from "./cancellables";
 import { GlobalRequestQueue } from "./request-queue";
-import { Limits, RequestOptions } from "./types";
+import { Limits, RequestCallback, RequestOptions, Tenants, TenantConfig } from "./types";
 import { Host } from './host';
 import { Request } from "./request";
 import { Ring } from "./ring";
-import { Throttle } from "./throttle";
+import { Throttle, NoThrottle } from "./throttle";
 
 const limitDefaults = {
-    reqRateLimit: 200, // Maximum request rate in requests per minute.
-    maxQueueTime: 10,  // Maximum time for a request to stay queued (sec).
-    maxRetries: 3,   // Maximum number of retries before reporting an error.
-    maxQueueSize: 500, // Maximum length of the local queues (ie. highWaterMark).
-    requestLimit: 20,  // Upper limit to number of outstanding requests.
-    retryAfter: 100, // ms
-    timeout: 50000 // ms
+    reqRateLimit: 200,  // Maximum request rate in requests per minute.
+    maxQueueTime: 10,   // Maximum time for a request to stay queued (sec).
+    maxRetries:   3,    // Maximum number of retries before reporting an error.
+    maxQueueSize: 500,  // Maximum length of the local queues (ie. highWaterMark).
+    requestLimit: 20,   // Upper limit to number of outstanding requests.
+    retryAfter:   100,  // ms
+    timeout:      50000 // ms
 };
 
 /**
- * @classdesc
  * The BalancedAPIRequest class enriches the functionality of {@link DirectAPIRequest}
  * with an efficient load balancing, queuing and request throttling layer that protects
  * the Dynatrace cluster from request overload while ensuring that for each request the
@@ -27,8 +26,9 @@ const limitDefaults = {
  */
 export class BalancedAPIRequest {
 
-    hosts: Ring<Host> = new Ring<Host>();
-    globalQueue: GlobalRequestQueue;
+    private hosts: Ring<Host> = new Ring<Host>();
+    private tenants: { [key: string]: TenantConfig };
+    private globalQueue: GlobalRequestQueue;
 
     /**
      * Creates a pool of connections to reach multiple tenants and clusters.
@@ -36,11 +36,14 @@ export class BalancedAPIRequest {
      * @param limits  - Default values for `retryLimit`, `retryAfter` and `timeout`.
      * @param tenants - The configurations for the tenants. 
      */
-    constructor (private limits: Limits = {}, private tenants = {}) {
+    constructor (private limits: Limits = {}, tenants: Tenants = {}) {
         // TODO: These limits can also be defined on a tenant level. And we should
         // also allow for throttling limits on a tenant level just the way we do
         // for the ThrottleService tokens.
-        this.limits = { ...limitDefaults, ...limits };
+        const self = this;
+
+        this.limits  = { ...limitDefaults, ...limits };
+        this.tenants = {};
 
         /*  We maintain a global non-tenant-specific queue that idle hosts can peek 
             in to see if there's a request waiting for a tenant that it serves.
@@ -60,49 +63,60 @@ export class BalancedAPIRequest {
             We replace each host with a Host object that throttles its own requests.
         */
         Object.keys(tenants).forEach(tenant => {
-            // Make sure we always have a list of hosts, even if only one. 
-            let tenantHosts = tenants[tenant].hosts ||
-                (tenants[tenant].host ? [tenants[tenant].host] : []);
+            // Distribute the request limits over the number of hosts for this tenant.
+            const hostList = tenants[tenant].hosts || [ tenants[tenant].host ];
+            const hostLimits = { ...{
+                    reqRateLimit: Math.round(self.limits.reqRateLimit / hostList.length),
+                    requestLimit: Math.round(self.limits.requestLimit / hostList.length)
+                }, 
+                ...this.limits
+            }            
+            this.tenants[tenant] = {
+                name:     tenants[tenant].name,
+                token:    tenants[tenant].token,
+                hosts:    hostList
+                    .map(hostName => {
+                        // Create a new Host object if we didn't already have it,
+                        // Or raise its limits if we do.
+                        if (self.hosts[hostName]) 
+                            self.hosts[hostName].raiseLimits(hostLimits);
+                        else 
+                            self.hosts[hostName] = new Host(hostName, self.globalQueue, hostLimits); 
 
-            if (tenantHosts.length === 0)
-                throw new Error("No hosts available for " + tenant);
-
-            this.tenants[tenant] = { ...tenants[tenant] };   // Copy config over.
-
-            this.tenants[tenant].hosts = tenantHosts.map(hostName => {
-                // Create a new host if we didn't already have it.
-                this.hosts[hostName] = this.hosts[hostName] ||
-                    new Host(hostName, this.globalQueue, limits); // TODO: Also merg in the limits for the tenant specifically
-
-                // Return the Host object for this host name.
-                return this.hosts[hostName];
-            });
-            // If the tenant as a request rate limit, create a throttle to enforce it.
-            this.tenants[tenant].throttle = tenants[tenant].reqRateLimit
-                ? new Throttle(tenants[tenant].reqRateLimit, 60 * 1000)
-                : { waitTime: 0, consume: () => { }, permit: async () => { } };
+                        return self.hosts[hostName];
+                    }),
+                port:     tenants[tenant].port || 443,
+                url:      tenants[tenant].url,
+                protocol: tenants[tenant].protocol || "https",
+                // If the tenant has a request rate limit, create a throttle to enforce it.
+                throttle: tenants[tenant].reqRateLimit
+                        ? new Throttle(tenants[tenant].reqRateLimit, 60 * 1000)
+                        : new NoThrottle()
+            }; 
         });
 
         // Convert the hosts object to a Ring for easy round-robining.
         this.hosts = new Ring(Object.values(this.hosts));
-
     }
 
     private resetHosts(): void {
         if (this.hosts) this.hosts.forEach(host => host.reset());
     }
 
-    /*  This is the main function. Requests are submitted here and shopped 
-        across the available hosts until we find one that can handle the
-        request. The 'onDone()' callback will called with the result of 
-        executing the request, or with the error if something went wrong.
-    */
-    submitRequest(options: RequestOptions, onDone: (error?: any, data?: any) => any) {
+    /**
+     * This is the main function. Requests are submitted here and shopped 
+     * across the available hosts until we find one that can handle the
+     * request. The 'onDone()' callback will called with the result of 
+     * executing the request, or with the error if something went wrong.
+     *
+     * @memberof BalancedAPIRequest
+     */
+    private submitRequest(options: RequestOptions, onDone: (error?: any, data?: any) => any) {
         // Callers can give us a tenant name or a tenant object. If it is
         // an object, we want to exchange that for our own tenant object.
-        const name = typeof options.tenant === "string"
-            ? options.tenant
-            : options.tenant.name;
+        const name   = typeof options.tenant === "string"
+                     ? options.tenant
+                     : options.tenant.name;
         const tenant = this.tenants[name];
 
         if (!tenant) {
@@ -193,16 +207,14 @@ export class BalancedAPIRequest {
 
         if (!request.queue) {
             /*  If the request is not yet in a queue, then that's bad. We're going 
-                to see if any of the suitable hosts can still communicate with its 
+                to see if any of the suitable hosts can still communicate with their 
                 respective endpoint. If nobody can, we'll have to raise an error. 
                 Otherwise they're all just throttling our requests. 
             */
-            // TODO!
-            // @ts-ignore
             Promise.any(tenant.hosts.map(host => host.isAlive(tenant)))
                 .then(() => onDone({
                     status: 429,
-                    message: "All endpoints for " + tenant.name + " are busy"
+                    message: "All endpoints for " + tenant.name + " are at capacity"
                 }))
                 .catch(() => onDone({
                     status: 503,
@@ -218,7 +230,7 @@ export class BalancedAPIRequest {
         return request.emitter;
     }
 
-    healthReport(callback?: Function) {
+    private healthReport(callback?: Function) {
         const now = (new Date()).getTime();
 
         const report = [];
@@ -300,7 +312,7 @@ export class BalancedAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    public fetch(options, onDone) {
+    public fetch(options: RequestOptions, onDone: RequestCallback = () => { }): CancellableEventEmitter | CancellablePromise {
         /*  If there's a callback, return a CancellableEventEmitter.
             If there is no callback, return a CancellablePromise.
 
@@ -321,8 +333,7 @@ export class BalancedAPIRequest {
                 // This registers our 'cancel' handler. It just delegates
                 // the cancellation to the emitter, who knows what to do.
                 cancel(reason => emitter.cancel(reason));
-            }
-            );
+            });
         }
     }
     public async get(url, options, onDone = () => { }) {

@@ -1,3 +1,4 @@
+import https, { Agent } from "https";
 import axios from "axios";
 import { Limits, RequestCallback, RequestOptions } from './types';
 
@@ -42,19 +43,7 @@ const defaultLimits = {
  */
 export class DirectAPIRequest {
     private limits: Limits = {};
-
-
-    /*  When using axios, the rejectUnauthorized works like this:
-
-            const agent = new https.Agent({ rejectUnauthorized: false });
-            axios.get('https://something.com/foo', { httpsAgent: agent });
-
-        OR:
-            https.globalAgent.options.rejectUnauthorized = false;
-
-        As a last resort, this can be placed in the top of the main JS file:
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-     */
+    private httpsAgent: Agent = null;
 
     /**
      * Creates an instance with which any number of API requests can be made.
@@ -63,19 +52,31 @@ export class DirectAPIRequest {
      */
     constructor(limits = {}) {
         this.limits = { ...defaultLimits, ...limits };
+
+        try {
+            // Create an HTTPS agent for Axios to not reject Self-signed SSL 
+            // certificates. Is important in a development context.
+            this.httpsAgent = new https.Agent({ rejectUnauthorized: false });            
+        } 
+        catch (ex) {
+            this.httpsAgent = null;
+        }
     }
 
-    serializeParams(params: any): string {
-        const serialized = '?' + Object.keys(params).filter(key => params[key]).map(key => {
+    private serializeParams(params: any): string {
+        const serialized = Object.keys(params)
+            .filter(key => params[key])
+            .map(key => Array.isArray(params[key])
+                      ? params[key]
+                        .filter(val => params[key][val])
+                        .map(val => key + "=" + val)
+                        .join('&')
+                      :  key + "=" + params[key]
+                )
+            .join("&");
 
-            if (!Array.isArray(params[key]))
-                return key + "=" + params[key];
-
-            // If it's an array, create multiple identical keys with the different values.
-            return params[key].filter(val => params[key][val]).map(val => key + "=" + val).join('&');
-        }).join("&");
-        // Return empty string where no params are rendered
-        return serialized.length == 1 ? '' : serialized;
+        // Return empty string (i.e. no '?') if no params were rendered.
+        return serialized.length == 0 ? '' : ('?' + serialized);
     }
 
     /**
@@ -121,25 +122,12 @@ export class DirectAPIRequest {
         let waitAndRetry = null;
         let nextPageKey = null;
         let attempts = maxRetries;
-        let https = null;
 
         const getAPIResetDelay = (headers) => {
             if (!headers) return retryAfter;
             const delay = Number(headers["Retry-After"]);
             return isNaN(delay) ? retryAfter : delay;
         };
-
-        try {
-            https = require("https");
-        } 
-        catch (ex) {
-            // NOP
-        }
-
-        // Create HTTPS agent for Axios to not reject Self-signed SSL certs in node env.
-        const httpsAgent = https
-            ? new https.Agent({ rejectUnauthorized: false })
-            : null;
 
         try {
             do {
@@ -152,14 +140,14 @@ export class DirectAPIRequest {
                 // Create non-referenced copy of params.
                 const requestOpts = JSON.parse(JSON.stringify(options));
                 delete requestOpts.params;
-                requestOpts.httpsAgent = httpsAgent;
+                requestOpts.httpsAgent = this.httpsAgent;
 
-                // In case we need to retry or get multiple pages it's best to  
-                // give Axios a clean 'options' object for each request.
+                // In case we need to retry or get multiple pages it's best   
+                // to give Axios a clean 'options' object for each request.
                 response = await axios(targetUrl, requestOpts);
 
-                // We collect the wait time, but we only use it if we receive a
-                // recoverable error or if the response is paged.
+                // We collect the wait time, but we only use it if we receive
+                // a recoverable error or if the response is paged.
                 waitTime = getAPIResetDelay(response.headers);
 
                 // Only try again when we get an actual status code.
@@ -190,24 +178,24 @@ export class DirectAPIRequest {
                     // Good, useable JSON response received.
                     waitAndRetry = null;
 
-                    // Immediately return stream.
                     if (options.responseType === 'stream') {
+                        // Use the stream as-is.
                         data = response.data;
                     }
-                    // We have the whole response object.
                     else {
-                        // Depending on the API, a paged set of results may be an
-                        // array, or may be an array at a property.
+                        // Use the response as a result set object.
+                        // Depending on the API, a paged set of results  
+                        // may be an array, or an array at a property.
                         list = prop ? response.data[prop] : response.data;
                         data = data !== null
-                            ? data.concat(list)
-                            : list;
+                             ? data.concat(list)
+                             : list;
     
-                        nextPageKey = response.headers["next-page-key"] || // v1
-                                      response.data.nextPageKey;           // v2      
+                        nextPageKey = response.headers["next-page-key"]  // v1
+                                   || response.data.nextPageKey;         // v2      
                                       
-                        // If we have a next page key and we have paging is not false, attempt to 
-                        // automatically page through results.
+                        // If we have a 'next page key' and paging is not explicitly
+                        // disabled, attempt to automatically page through the results.
                         if (nextPageKey && options.paging !== false) {
                             // There's slight difference between v1 and v2 APIs here.
                             if (options.url.includes('/v1'))
@@ -222,19 +210,12 @@ export class DirectAPIRequest {
                 }
             } while (waitAndRetry);
 
-            
-            let output = {};
+            let output = response.data;
 
-            // If the response is a stream, directly return it.
-            if (options.responseType === 'stream') {
-                output = data;
-            }
-            // If we had take the data from a property so that we could
-            // keep appending paged data, then put that property back again.
-            else if (prop) {
-                list = data;
-                output = data;
-                output[prop] = list;
+            if (options.responseType !== 'stream' && prop) {
+                // If we had take the data from a property so that we could
+                // keep appending paged data, then put that property back again.
+                output[prop] = data;
             }
 
             onDone(null, output);
@@ -254,27 +235,29 @@ export class DirectAPIRequest {
 
             if (error.response) {
                 // The error was returned by the server.
-                // We can still have Dynatrace explanations in the response.
+                // We may have a Dynatrace explanation in the response.
                 if (error.response.data && error.response.data.error) {
-                    raisedError.status = error.response.status;
+                    raisedError.status  = error.response.status;
                     raisedError.message = error.response.data.error.constraintViolations
-                        || error.response.data.error.message
-                        || error.response.statusText;
+                                       || error.response.data.error.message
+                                       || error.response.statusText;
                 }
                 else {
-                    raisedError.status = error.response.status;
+                    raisedError.status  = error.response.status;
                     raisedError.message = error.response.statusText;
                 }
             }
             else if (error.request) {
                 // The request was made but no response was received.
-                raisedError.status = error.code;
-                raisedError.message = error.message || error.code || "Failed to issue request";
+                raisedError.status  = error.code;
+                raisedError.message = error.message 
+                                   || error.code 
+                                   || "No usable response received";
             }
             else {
-                // The request was not made because an error occurred.
-                raisedError.status = error.status || 500;
-                raisedError.message = error.message || "Unknown error";
+                // The request was not made because some error occurred.
+                raisedError.status  = error.status  || 500;
+                raisedError.message = error.message || "Request could not be issued";
             }
 
             onDone(raisedError);

@@ -5,28 +5,39 @@ import { RequestQueue } from "./request-queue";
 import { Throttle } from "./throttle";
 import { Limits, Tenant } from "./types";
 
-
+/**
+ *  Manages access to HTTP requests at a given host name. 
+ *  It uses a throttle and a local queue to ensure that any 
+ *  rate limits and concurrent request limits are observed.
+ */
 export class Host {
     
+    private hostName;
     private globalQueue;
     private requester;
     private throttle;
     private requestLimit;
 
-    // TODO: Validate this works correctly.
     public readonly localQueue: RequestQueue;
     public readonly issuedList: RequestQueue;
 
-    constructor(private hostName, private mainQueue, { requestLimit, maxQueueSize, maxQueueTime, reqRateLimit, maxRetries }: Limits) {
-        this.globalQueue = mainQueue;
-        this.requester = new DirectAPIRequest({ maxRetries });
-        this.issuedList = new RequestQueue(requestLimit, maxQueueTime);
-        this.localQueue = new RequestQueue(maxQueueSize, maxQueueTime);
-        this.throttle = new Throttle(reqRateLimit, 60 * 1000);
-
+    constructor(hostName, mainQueue, { requestLimit, maxQueueSize, maxQueueTime, reqRateLimit, maxRetries }: Limits) {
+        this.hostName     = hostName;
+        this.globalQueue  = mainQueue;
         this.requestLimit = requestLimit;
+
+        this.requester    = new DirectAPIRequest({ maxRetries });
+        this.throttle     = new Throttle(reqRateLimit, 60 * 1000);        
+        this.issuedList   = new RequestQueue(requestLimit, maxQueueTime);
+        this.localQueue   = new RequestQueue(maxQueueSize, maxQueueTime);
     }
 
+    public raiseLimits({ requestLimit, reqRateLimit }: Limits) {
+        this.throttle     = new Throttle(reqRateLimit, 60 * 1000);
+
+        this.issuedList.extendBy(requestLimit);
+        this.localQueue.extendBy(requestLimit);
+    }
     /**
      * Empty the queue; clear the throttler; empty the lists.
      */
@@ -76,10 +87,10 @@ export class Host {
     }
 
     /**
-     * Refills the bucket completely.
+     * Ask the host to accept and issue this request.
      * @param  request [description]
      * @param   forced If forced is `true`, disregard queue and make the request.
-     * @return         `true` if the request was queued. Otherwise returns `false`.
+     * @return `true` if the request was queued. Otherwise returns `false`.
      */
     public accept(request, forced = false) {
         // Schedule a recursive call to keep consuming from the queues.
@@ -121,28 +132,31 @@ export class Host {
     }
 
     // Easy for everybody to call to keep on consuming queued requests.
-    acceptNext = this.accept.bind(this);
+    private acceptNext: any = this.accept.bind(this);
 
     /**
-     * return hostname.
+     * Return the name of the host.
      */
     public get name(): string {
         return this.hostName;
     }
 
-
     /**
      * Check if the specified tenant is reachable.
      * @param tenant Tenant
-     * @returns true if it can be reached.
+     * @returns A promise that resolves to `true` if it 
+     * can be reached or rejects if it can't.
      */
-    public isAlive (tenant: Tenant): Promise<AxiosResponse<any, any>> {
-        return axios.get(
-            (tenant.protocol || "https") + "://" + this.hostName
+    public async isAlive(tenant: Tenant): Promise<boolean> {
+        const result: AxiosResponse<any, any> = await axios.get(
+            tenant.protocol + "://" + this.hostName
             + (tenant.port ? ":" + tenant.port : "")
             + (tenant.url || "") + "/api/v1/time",
-            { responseType: 'blob' }    // It's an epoch time, a string we'll be getting back.
+            { responseType: 'blob' } 
         );
+        if (!result.data) 
+            throw new Error("dead");
+        return true;
     }
 
     /**
