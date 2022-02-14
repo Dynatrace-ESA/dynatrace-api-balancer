@@ -7,13 +7,13 @@ import { Ring } from "./ring";
 import { Throttle, NoThrottle } from "./throttle";
 
 const limitDefaults = {
-    reqRateLimit: 200,  // Maximum request rate in requests per minute.
-    maxQueueTime: 10,   // Maximum time for a request to stay queued (sec).
-    maxRetries:   3,    // Maximum number of retries before reporting an error.
-    maxQueueSize: 500,  // Maximum length of the local queues (ie. highWaterMark).
-    requestLimit: 20,   // Upper limit to number of outstanding requests.
-    retryAfter:   100,  // ms
-    timeout:      50000 // ms
+    reqRateLimit: 200,   // Maximum request rate in requests per minute.
+    maxQueueTime: 10000, // Maximum time for a request to stay queued (ms).
+    maxRetries:   3,     // Maximum number of retries before reporting an error.
+    maxQueueSize: 500,   // Maximum length of the local queues (ie. highWaterMark).
+    requestLimit: 20,    // Upper limit to number of outstanding requests.
+    retryAfter:   1000,  // Default wait time before retrying a request (ms).
+    timeout:      50000  // Maximum timeout for a request (ms).
 };
 
 /**

@@ -126,11 +126,11 @@ export type RequestError = {}
 export type RequestCallback = (error: RequestError, data?: any) => unknown
 
 export type Limits = {
-    reqRateLimit?: 200  | number, // Maximum request rate in requests per minute.
-    maxQueueTime?: 10   | number, // Maximum time for a request to stay queued (sec).
-    maxRetries?:   3    | number, // Maximum number of retries before reporting an error.
-    maxQueueSize?: 500  | number, // Maximum length of the local queues (ie. highWaterMark).
-    requestLimit?: 20   | number, // Upper limit to number of outstanding requests.
-    retryAfter?:   1000 | number, // ms
-    timeout?:      5000 | number  // ms    
+    reqRateLimit?: 200   | number, // Maximum request rate in requests per minute.
+    maxQueueTime?: 10000 | number, // Maximum time for a request to stay queued (ms).
+    maxRetries?:   3     | number, // Maximum number of retries before reporting an error.
+    maxQueueSize?: 500   | number, // Maximum length of the local queues (ie. highWaterMark).
+    requestLimit?: 20    | number, // Upper limit to number of outstanding requests.
+    retryAfter?:   1000  | number, // Default wait time before retrying a request (ms).
+    timeout?:      50000 | number  // Maximum timeout for a request (ms).
 }
