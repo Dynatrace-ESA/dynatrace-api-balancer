@@ -99,7 +99,7 @@ export class DirectAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    public async fetch<T = any>(options: RequestOptions, onDone: RequestCallback = () => { }) {
+    public async fetch<T = any>(options: RequestOptions, onDone: RequestCallback) {
         const now = (new Date()).getTime();
         const issueTime  = now;
         const timeout    = options.timeout    || this.limits.timeout;
@@ -265,23 +265,23 @@ export class DirectAPIRequest {
         }
     }
 
-    public async get(url: string, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async get(url: string, options: RequestOptions, onDone: RequestCallback): Promise<any> {
         options.url = url;
         options.method = 'get';
         return this.fetch(options, onDone);
     }
-    public async delete(url: string, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async delete(url: string, options: RequestOptions, onDone: RequestCallback): Promise<any> {
         options.url = url;
         options.method = 'delete';
         return this.fetch(options, onDone);
     }
-    public async post(url: string, data: any, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async post(url: string, data: any, options: RequestOptions, onDone: RequestCallback): Promise<any> {
         options.url = url;
         options.data = data;
         options.method = 'post';
         return this.fetch(options, onDone);
     }
-    public async put(url: string, data: any, options: RequestOptions, onDone: RequestCallback = () => { }): Promise<any> {
+    public async put(url: string, data: any, options: RequestOptions, onDone: RequestCallback): Promise<any> {
         options.url = url;
         options.data = data;
         options.method = 'put';

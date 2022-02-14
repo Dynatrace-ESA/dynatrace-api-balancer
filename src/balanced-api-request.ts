@@ -40,7 +40,7 @@ export class BalancedAPIRequest {
         // TODO: These limits can also be defined on a tenant level. And we should
         // also allow for throttling limits on a tenant level just the way we do
         // for the ThrottleService tokens.
-        const self = this;
+        const hosts = [];
 
         this.limits  = { ...limitDefaults, ...limits };
         this.tenants = {};
@@ -66,8 +66,8 @@ export class BalancedAPIRequest {
             // Distribute the request limits over the number of hosts for this tenant.
             const hostList = tenants[tenant].hosts || [ tenants[tenant].host ];
             const hostLimits = { ...{
-                    reqRateLimit: Math.round(self.limits.reqRateLimit / hostList.length),
-                    requestLimit: Math.round(self.limits.requestLimit / hostList.length)
+                    reqRateLimit: Math.round(this.limits.reqRateLimit / hostList.length),
+                    requestLimit: Math.round(this.limits.requestLimit / hostList.length)
                 }, 
                 ...this.limits
             }            
@@ -78,12 +78,12 @@ export class BalancedAPIRequest {
                     .map(hostName => {
                         // Create a new Host object if we didn't already have it,
                         // Or raise its limits if we do.
-                        if (self.hosts[hostName]) 
-                            self.hosts[hostName].raiseLimits(hostLimits);
+                        if (hosts[hostName]) 
+                            hosts[hostName].raiseLimits(hostLimits);
                         else 
-                            self.hosts[hostName] = new Host(hostName, self.globalQueue, hostLimits); 
+                            hosts[hostName] = new Host(hostName, this.globalQueue, hostLimits); 
 
-                        return self.hosts[hostName];
+                        return hosts[hostName];
                     }),
                 port:     tenants[tenant].port || 443,
                 url:      tenants[tenant].url,
@@ -96,7 +96,7 @@ export class BalancedAPIRequest {
         });
 
         // Convert the hosts object to a Ring for easy round-robining.
-        this.hosts = new Ring(Object.values(this.hosts));
+        this.hosts = new Ring(Object.values(hosts));
     }
 
     private resetHosts(): void {
@@ -312,7 +312,7 @@ export class BalancedAPIRequest {
      * - `post(url, data, options[, onDone])`
      * - `put(url, data, options[, onDone])`
      */
-    public fetch(options: RequestOptions, onDone: RequestCallback = () => { }): CancellableEventEmitter | CancellablePromise {
+    public fetch(options: RequestOptions, onDone: RequestCallback): CancellableEventEmitter | CancellablePromise {
         /*  If there's a callback, return a CancellableEventEmitter.
             If there is no callback, return a CancellablePromise.
 
@@ -336,23 +336,23 @@ export class BalancedAPIRequest {
             });
         }
     }
-    public async get(url, options, onDone = () => { }) {
+    public async get(url, options, onDone) {
         options.url = url;
         options.method = 'get';
         return this.fetch(options, onDone);
     }
-    public async delete(url, options, onDone = () => { }) {
+    public async delete(url, options, onDone) {
         options.url = url;
         options.method = 'delete';
         return this.fetch(options, onDone);
     }
-    public async post(url, data, options, onDone = () => { }) {
+    public async post(url, data, options, onDone) {
         options.url = url;
         options.data = data;
         options.method = 'post';
         return this.fetch(options, onDone);
     }
-    public async put(url, data, options, onDone = () => { }) {
+    public async put(url, data, options, onDone) {
         options.url = url;
         options.data = data;
         options.method = 'put';
