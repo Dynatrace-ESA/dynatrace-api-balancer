@@ -28,11 +28,17 @@ export class Request {
                 ? options.timeout * 1000
                 : options.timeout;
         options.method = options.method || (options.data ? "post" : "get");
-        options.headers = Object.assign(options.headers || {}, {
-            'Authorization': 'Api-Token ' + tenant.token,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        });
+
+        // Remove any prior authorization header.
+        options.headers = options.headers || {};
+        delete options.headers.authorization;
+        options.headers['Authorization'] = 'Api-Token ' + tenant.token;
+
+        // If the data should be exchanged as JSON, set that.
+        if (options.forceJSON === true) {
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+        }
 
         // Older code may still pass a query string. 
         if (typeof options.params === 'string') {
