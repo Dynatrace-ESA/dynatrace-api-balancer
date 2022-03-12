@@ -23,22 +23,15 @@ export class Request {
             with a few amendments made in this constructor.        
          */
         options.timeout = !options.timeout
-            ? limits.timeout
-            : options.timeout < 100
-                ? options.timeout * 1000
-                : options.timeout;
+                        ? limits.timeout
+                        : options.timeout < 100
+                            ? options.timeout * 1000
+                            : options.timeout;
         options.method = options.method || (options.data ? "post" : "get");
 
-        // Remove any prior authorization header.
+        // Set the API token to be used for this tenant.
         options.headers = options.headers || {};
-        delete options.headers.authorization;
         options.headers['Authorization'] = 'Api-Token ' + tenant.token;
-
-        // If the data should be exchanged as JSON, set that.
-        if (options.forceJSON === true) {
-            options.headers['Content-Type'] = 'application/json';
-            options.headers['Accept'] = 'application/json';
-        }
 
         // Older code may still pass a query string. 
         if (typeof options.params === 'string') {
@@ -113,7 +106,7 @@ export class Request {
                 typeof reason === "number"
                     ? {
                         status: 408,
-                        message: "Request Timeout - no response" + (reason ? " within " + reason + "s" : "")
+                        message: "Request Timeout - No response" + (reason ? " within " + reason + "s" : "")
                     }
                     : reason
                         ? {
@@ -128,7 +121,7 @@ export class Request {
                 typeof reason === "number"
                     ? {
                         status: 429,
-                        message: "Too Many Requests - not issued" + (reason ? " within " + reason + "s" : "")
+                        message: "Too Many Requests - Not issued" + (reason ? " within " + reason + "s" : "")
                     }
                     : reason
                         ? {

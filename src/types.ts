@@ -84,7 +84,6 @@ export type Tenants = { [key: string]: Tenant };
  * @param maxBodyLength	    - Maximum size of the http request content in bytes.
  * @param maxContentLength  - Maximum size of the http response content in bytes.
  * @param validateStatus   	- **IGNORED** This parameter is set by {@link BalancedAPIRequest} and {@link DirectAPIRequest} internally.
- * @param forceJSON 	    - Specifies if the request and response data should be JSON. Defaults to 'true'.
  * @param responseType 		- Specifies the type of data that the server will respond with. Options are: `'arraybuffer'`, `'document'`, `'json'`, `'text'`, `'stream'`. **Note**: The automatic paging support only works then this value is set to `'json'`.
  * @param withCredentials	- Specifies whether or not cross-site Access-Control requests should be made using credentials.
  * @param responseEncoding 	- Encoding to use for decoding responses. Note: Ignored when `responseType` is `'stream'`.
@@ -100,8 +99,7 @@ export type RequestOptions = AxiosRequestConfig & {
     createTime?: number,
     noQueue?: boolean,
     paging?: boolean,
-    maxRetries?: 3 | number,
-    forceJSON?: true | boolean
+    maxRetries?: 3 | number
 }
 
 /**
