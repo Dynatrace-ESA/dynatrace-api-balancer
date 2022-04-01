@@ -130,7 +130,7 @@ export class DirectAPIRequest {
                 if (waitAndRetry)    // Wait for the specified amount of time.
                     await new Promise(resolve => setTimeout(resolve, waitAndRetry));
                     
-                // Explicitly render parmeters for Dynatrace compatibility.
+                // Explicitly render parameters for Dynatrace compatibility.
                 const targetUrl = options.url + this.serializeParams(options.params);
 
                 // Create non-referenced copy of params.

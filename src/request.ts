@@ -42,6 +42,10 @@ export class Request {
                 options.params[parts.shift()] = parts.join('=');
             });
         }
+        else {
+            // Must be present.
+            options.params = options.params || {};
+        }
 
         // ! TBD
         // Setting a cancelToken makes the request cancellable (once it has been

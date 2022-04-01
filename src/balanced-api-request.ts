@@ -384,7 +384,7 @@ export class BalancedAPIRequest {
      */
     public getHealthMetrics(frequency, callback) {
         if (frequency && callback)
-            return setInterval(this.healthReport, frequency, callback);
+            return setInterval(this.healthReport.bind(this), frequency, callback);
         else
             return this.healthReport();
     }
