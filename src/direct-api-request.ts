@@ -257,16 +257,15 @@ export class DirectAPIRequest {
             if (error.response) {
                 // The error was returned by the server.
                 raisedError.status  = error.response.status || error.status;
-                raisedError.message = error.response.data?.error 
+                raisedError.message = error.response.error  || error.message
                                    || error.response.statusText 
-                                   || error.message;
+                                   || "Received a bad response";
             }
             else if (error.request) {
                 // The request was made but no response was received.
                 raisedError.status  = error.code;
-                raisedError.message = error.message 
-                                   || error.code 
-                                   || "No usable response received";
+                raisedError.message = error.message || error.code 
+                                   || "Received no usable response";
             }
             else {
                 // The request was not made because some error occurred.
