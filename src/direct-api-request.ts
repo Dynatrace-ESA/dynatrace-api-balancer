@@ -1,6 +1,7 @@
 import https, { Agent } from "https";
 import axios from "axios";
 import { Limits, RequestCallback, RequestOptions } from './types';
+import { Readable } from "stream";
 
 const resultProps = {
     "/api/v1/userSessionQueryLanguage/tree": "values",
@@ -63,6 +64,15 @@ export class DirectAPIRequest {
         }
     }
 
+    streamToString(stream: Readable): Promise<string> {
+        const chunks = [];
+        return new Promise((resolve, reject) => {
+            stream.on('data', chunk => chunks.push(Buffer.from(chunk)));
+            stream.on('error', err => reject(err));
+            stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+        });
+    }
+
     private serializeParams(params: any): string {
         const serialized = Object.keys(params)
             .filter(key => params[key])
@@ -103,9 +113,12 @@ export class DirectAPIRequest {
         const retryAfter = this.limits.retryAfter;
 
         // There are certain errors that are potentially recoverable.
+        // UPDATE: We're handling them now differently (try/catch).
+        /*  
         options.validateStatus = status =>
-            (status >= 200 && status < 400) ||
+            (status >= 200 && status <= 400) ||
             status === 429 || status === 500 || status === 503;
+         */
 
         // If we need to append result sets due to paging, we have to account 
         // for situations where the sets are under a property rather than as 
@@ -130,50 +143,59 @@ export class DirectAPIRequest {
                 if (waitAndRetry)    // Wait for the specified amount of time.
                     await new Promise(resolve => setTimeout(resolve, waitAndRetry));
                     
-                // Explicitly render parameters for Dynatrace compatibility.
-                const targetUrl = options.url + this.serializeParams(options.params);
-
-                // Create non-referenced copy of params.
-                const requestOpts = JSON.parse(JSON.stringify(options));
-                delete requestOpts.params;
-                requestOpts.httpsAgent = this.httpsAgent;
-
-                // Destroy the host header.
-                // This MUST be calculated by Axios.
-                // Under no circumstances should this be removed.
-                delete requestOpts.headers.host;
-
                 // In case we need to retry or get multiple pages it's best   
-                // to give Axios a clean 'options' object for each request.
-                response = await axios(targetUrl, requestOpts);
+                // to give Axios a clean 'options' object for each request.                    
+                // We also explicitly render parameters for Dynatrace compatibility.
+                try {                
+                    const targetUrl   = options.url + this.serializeParams(options.params);
+                    const requestOpts = JSON.parse(JSON.stringify(options));
+                    delete requestOpts.params;
+                    requestOpts.httpsAgent = this.httpsAgent;
 
+                    delete requestOpts.headers.host;
+
+                    response = await axios(targetUrl, requestOpts);
+                }
+                catch (ex) {
+                    response = ex.response;
+                }
+                
                 // We collect the wait time, but we only use it if we receive
                 // a recoverable error or if the response is paged.
                 waitTime = getAPIResetDelay(response.headers);
+                let timeLeft = (issueTime + timeout) > (now + waitTime);
 
                 // Only try again when we get an actual status code.
                 // This will NOT retry when a timeout occurs.
-                // Timeouts largely occur due to non-transient issues.
-                if (response.status >= 400) {
-                    let timeLeft = (issueTime + timeout) > (now + waitTime);
-
-                    if (response.status === 429 || response.status === 503) {
-                        // Too Many Requests or Service Unavailable. In both cases
-                        // the 'Retry-After' header may be present. We will retry 
-                        // after the retry time or a default delay has elapsed.
-                        if (!timeLeft)
-                            throw new Error(response.statusText + " - timeout of " + timeout + "ms exceeded");
-
-                        waitAndRetry = waitTime;
+                // Timeouts mostly occur because of non-transient issues.
+                if (response.status === 400) {
+                    throw {
+                        status:   response.status,
+                        response: JSON.parse(await this.streamToString(response.data))
                     }
-                    else {
-                        // Internal Server Error. Use default delay and retry as
-                        // many times as we're allowed for this request.
-                        if (!timeLeft || attempts-- < 0)
-                            throw new Error(response.statusText + " - timeout of " + timeout + "ms or retry max of " + maxRetries + " exceeded");
-
-                        waitAndRetry = waitTime;
+                }
+                else if (response.status === 429 || response.status === 503) {
+                    // Too Many Requests or Service Unavailable. In both cases
+                    // the 'Retry-After' header may be present. We will retry 
+                    // after the retry time or a default delay has elapsed.
+                    if (!timeLeft) {
+                        throw {
+                            status:  response.status,
+                            message: response.statusText + " - timeout of " + timeout + "ms exceeded"
+                        }
                     }
+                    waitAndRetry = waitTime;
+                }
+                else if (response.status > 400) {
+                    // Internal Server Error. Use default delay and retry as
+                    // many times as we're allowed for this request.
+                    if (!timeLeft || attempts-- < 0) {
+                        throw {
+                            status:  response.status,
+                            message: response.statusText + " - timeout of " + timeout + "ms or retry max of " + maxRetries + " exceeded"
+                        }
+                    }
+                    waitAndRetry = waitTime;
                 }
                 else {
                     // Good, useable JSON response received.
@@ -225,7 +247,7 @@ export class DirectAPIRequest {
         catch (error) {
             // Errors handled here are unrecoverable.
             const raisedError = {
-                status: null,
+                status:  null,
                 message: null,
                 url:     options.url,
                 baseURL: options.baseURL,
@@ -236,24 +258,16 @@ export class DirectAPIRequest {
 
             if (error.response) {
                 // The error was returned by the server.
-                // We may have a Dynatrace explanation in the response.
-                if (error.response.data && error.response.data.error) {
-                    raisedError.status  = error.response.status;
-                    raisedError.message = error.response.data.error.constraintViolations
-                                       || error.response.data.error.message
-                                       || error.response.statusText;
-                }
-                else {
-                    raisedError.status  = error.response.status;
-                    raisedError.message = error.response.statusText;
-                }
+                raisedError.status  = error.response.status || error.status;
+                raisedError.message = error.response.error  || error.message
+                                   || error.response.statusText 
+                                   || "Received a bad response";
             }
             else if (error.request) {
                 // The request was made but no response was received.
                 raisedError.status  = error.code;
-                raisedError.message = error.message 
-                                   || error.code 
-                                   || "No usable response received";
+                raisedError.message = error.message || error.code 
+                                   || "Received no usable response";
             }
             else {
                 // The request was not made because some error occurred.
