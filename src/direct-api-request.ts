@@ -138,6 +138,11 @@ export class DirectAPIRequest {
                 delete requestOpts.params;
                 requestOpts.httpsAgent = this.httpsAgent;
 
+                // Destroy the host header.
+                // This MUST be calculated by Axios.
+                // Under no circumstances should this be removed.
+                delete requestOpts.headers.host;
+
                 // In case we need to retry or get multiple pages it's best   
                 // to give Axios a clean 'options' object for each request.
                 response = await axios(targetUrl, requestOpts);
