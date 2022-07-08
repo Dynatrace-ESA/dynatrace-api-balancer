@@ -186,6 +186,12 @@ export class DirectAPIRequest {
                     }
                     waitAndRetry = waitTime;
                 }
+                else if (response.status == 401 || response.status == 403) {
+                    throw {
+                        status: response.status,
+                        message: response.data
+                    }
+                }
                 else if (response.status > 400) {
                     // Internal Server Error. Use default delay and retry as
                     // many times as we're allowed for this request.
