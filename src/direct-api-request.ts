@@ -112,14 +112,6 @@ export class DirectAPIRequest {
         const maxRetries = options.maxRetries || this.limits.maxRetries;
         const retryAfter = this.limits.retryAfter;
 
-        // There are certain errors that are potentially recoverable.
-        // UPDATE: We're handling them now differently (try/catch).
-        /*  
-        options.validateStatus = status =>
-            (status >= 200 && status <= 400) ||
-            status === 429 || status === 500 || status === 503;
-         */
-
         // If we need to append result sets due to paging, we have to account 
         // for situations where the sets are under a property rather than as 
         // top-level flat array.		
@@ -216,9 +208,7 @@ export class DirectAPIRequest {
                         // Depending on the API, a paged set of results  
                         // may be an array, or an array at a property.
                         list = prop ? response.data[prop] : response.data;
-                        data = data !== null
-                             ? data.concat(list)
-                             : list;
+                        data = data ? data.concat(list)   : list;
     
                         nextPageKey = response.headers["next-page-key"]  // v1
                                    || response.data.nextPageKey;         // v2      
@@ -239,12 +229,14 @@ export class DirectAPIRequest {
                 }
             } while (waitAndRetry);
 
-            let output = response.data;
-
+            let output: any = {};
             if (options.responseType !== 'stream' && prop) {
                 // If we had take the data from a property so that we could
                 // keep appending paged data, then put that property back again.
                 output[prop] = data;
+            }
+            else {
+                output = data;
             }
 
             if (onDone) onDone(null, output);
