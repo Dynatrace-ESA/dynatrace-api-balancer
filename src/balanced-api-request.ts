@@ -9,6 +9,7 @@ import { Throttle, NoThrottle } from "./throttle";
 const limitDefaults = {
     reqRateLimit: 200,   // Maximum request rate in requests per minute.
     maxQueueTime: 10000, // Maximum time for a request to stay queued (ms).
+    maxRequestTime: 100000, // Maximum time for a single request type to complete (ms).
     maxRetries:   3,     // Maximum number of retries before reporting an error.
     maxQueueSize: 500,   // Maximum length of the local queues (ie. highWaterMark).
     requestLimit: 20,    // Upper limit to number of outstanding requests.

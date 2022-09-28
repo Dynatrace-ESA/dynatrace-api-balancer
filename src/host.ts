@@ -21,14 +21,14 @@ export class Host {
     public readonly localQueue: RequestQueue;
     public readonly issuedList: RequestQueue;
 
-    constructor(hostName, mainQueue, { requestLimit, maxQueueSize, maxQueueTime, reqRateLimit, maxRetries }: Limits) {
+    constructor(hostName, mainQueue, { requestLimit, maxQueueSize, maxQueueTime, maxRequestTime, reqRateLimit, maxRetries }: Limits) {
         this.hostName     = hostName;
         this.globalQueue  = mainQueue;
         this.requestLimit = requestLimit;
 
         this.requester    = new DirectAPIRequest({ maxRetries });
         this.throttle     = new Throttle(reqRateLimit, 60 * 1000);        
-        this.issuedList   = new RequestQueue(requestLimit, maxQueueTime);
+        this.issuedList   = new RequestQueue(requestLimit, maxRequestTime);
         this.localQueue   = new RequestQueue(maxQueueSize, maxQueueTime);
     }
 

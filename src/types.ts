@@ -128,6 +128,7 @@ export type RequestCallback = (error: RequestError, data?: any) => unknown
 export type Limits = {
     reqRateLimit?: 200   | number, // Maximum request rate in requests per minute.
     maxQueueTime?: 10000 | number, // Maximum time for a request to stay queued (ms).
+    maxRequestTime?: 100000 | number, // Maximum time for a single request type to complete (ms).
     maxRetries?:   3     | number, // Maximum number of retries before reporting an error.
     maxQueueSize?: 500   | number, // Maximum length of the local queues (ie. highWaterMark).
     requestLimit?: 20    | number, // Upper limit to number of outstanding requests.
